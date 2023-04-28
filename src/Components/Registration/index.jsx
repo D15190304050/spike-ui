@@ -1,50 +1,7 @@
-import { Card, Button, Checkbox, Form, Input, message, Spin, Space } from "antd";
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
-import axiosWithInterceptor from "../../axios/axios";
-import "./index.scss"
+import { Button } from 'antd'
 
-function Login() {
-    const [messageApi, contextHolder] = message.useMessage();
-    const [loading, setLoading] = useState(false);
-
-    // Hooks can only be called inside a function.
-    let navigate = useNavigate();
-
-    const onFinish = async (loginInfo) => {
-        console.log('Success:', loginInfo);
-        setLoading(true);
-
-        axiosWithInterceptor.post("/api/login", loginInfo, {headers: {"Content-Type": "application/json"}})
-        .then(
-            response =>
-            {
-                setLoading(false);
-                let result = response.data;
-
-                if (result.success)
-                {
-                    // Save JWT token once login success.
-                    let token = result.data;
-                    console.log("token =", token);
-                    window.sessionStorage.setItem("token", token);
-
-                    // Navigate to home page.
-                    // navigate("/pages/")
-                }
-            }
-        )
-    };
-    
-    const onFinishFailed = (errorInfo) => {
-        console.log('Failed:', errorInfo);
-    };
-
-    const jumpToRegisterPage = () =>
-    {
-        console.log("jumpToRegisterPage...")
-    }
-
+function Registration()
+{
     return (
         <div>
             <Spin spinning={loading} size="large" tip="Loading..." delay={500}>
@@ -55,7 +12,7 @@ function Login() {
                     </div>
                     <div className="login-wrap">
                         <Card
-                            title="Reshaper"
+                            title="XXX System"
                             bordered={false}
                             style={{
                                 width: 500, // Card width: 500 px.
@@ -137,7 +94,7 @@ function Login() {
                 </div>
             </Spin>
         </div>
-    )
+    );
 }
 
-export default Login;
+export default Registration;

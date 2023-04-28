@@ -1,7 +1,13 @@
 import axios from "axios";
+import React, { Component } from 'react';
+import ReactDOM from 'react-dom';
+import { message, Spin } from 'antd';
+
+let requestCount = 0;
+
 
 const axiosWithInterceptor = axios.create({
-    timeout: 3000,
+    timeout: 1000 * 60 * 1,
     withCredentials: true,
     headers:
     {
