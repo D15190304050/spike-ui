@@ -1,13 +1,19 @@
 import { Card, Button, Checkbox, Form, Input, message, Spin, Space } from "antd";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
+import Cookies from "universal-cookie";
 import axiosWithInterceptor from "../../axios/axios";
 import "./index.scss"
 import AuthKeys from "../constants/AuthKeys.js";
 
+function goToSourcePage(redirectUrl, token)
+{
+    window.location.href = redirectUrl + "?token=" + token;
+}
+
 function Login() {
     const location = useLocation();
-
+    const cookies = new Cookies();
     const [messageApi, contextHolder] = message.useMessage();
     const [loading, setLoading] = useState(false);
 
@@ -16,7 +22,23 @@ function Login() {
 
     const queryParams = new URLSearchParams(location.search);
     const redirectUrl = queryParams.get(AuthKeys.RedirectUrl);
-    console.log("redirectUrl = " + redirectUrl);
+
+    useEffect(() =>
+    {
+        const ssoCookie = cookies.get(AuthKeys.SsoCookieName);
+        if (ssoCookie !== null)
+        {
+            axiosWithInterceptor.get("/api/spike/account/validate-token").then(response =>
+            {
+                const tokenValidationResult = response.data;
+                console.log("tokenValidationResult = ", tokenValidationResult);
+
+                // Jump to the source page only if the user comes from another page.
+                if (redirectUrl !== null && tokenValidationResult.success)
+                    goToSourcePage(redirectUrl, tokenValidationResult.data.token);
+            });
+        }
+    }, []);
 
     const onFinish = async (loginInfo) => {
         loginInfo.redirectUrl = redirectUrl;
@@ -44,7 +66,7 @@ function Login() {
                     if (redirectUrl !== null)
                     {
                         console.log("Go redirect.");
-                        window.location.href = redirectUrl + "?token=" + token;
+                        goToSourcePage(redirectUrl, token);
                     }
                 }
             }
