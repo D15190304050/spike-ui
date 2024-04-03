@@ -16,6 +16,7 @@ function Login() {
     const cookies = new Cookies();
     const [messageApi, contextHolder] = message.useMessage();
     const [loading, setLoading] = useState(false);
+    const [visible, setVisible] = useState(false);
 
     // Hooks can only be called inside a function.
     let navigate = useNavigate();
@@ -23,22 +24,26 @@ function Login() {
     const queryParams = new URLSearchParams(location.search);
     const redirectUrl = queryParams.get(AuthKeys.RedirectUrl);
 
-    // useEffect(() =>
-    // {
-    //     const ssoCookie = cookies.get(AuthKeys.SsoCookieName);
-    //     if (ssoCookie !== null)
-    //     {
-    //         axiosWithInterceptor.get("/api/spike/account/validate-token").then(response =>
-    //         {
-    //             const tokenValidationResult = response.data;
-    //             console.log("tokenValidationResult = ", tokenValidationResult);
-    //
-    //             // Jump to the source page only if the user comes from another page.
-    //             if (redirectUrl !== null && tokenValidationResult.success)
-    //                 goToSourcePage(redirectUrl, tokenValidationResult.data.token);
-    //         });
-    //     }
-    // }, []);
+    useEffect(() =>
+    {
+        const ssoCookie = cookies.get(AuthKeys.SsoCookieName);
+        if (ssoCookie !== null)
+        {
+            axiosWithInterceptor.get("/api/spike/account/validate-token").then(response =>
+            {
+                const tokenValidationResult = response.data;
+                console.log("tokenValidationResult = ", tokenValidationResult);
+
+                // Jump to the source page only if the user comes from another page.
+                if (redirectUrl !== null && tokenValidationResult.success)
+                    goToSourcePage(redirectUrl, tokenValidationResult.data.token);
+                else
+                    setVisible(true);
+            });
+        }
+        else
+            setVisible(true);
+    }, []);
 
     const onFinish = async (loginInfo) => {
         loginInfo.redirectUrl = redirectUrl;
@@ -85,7 +90,7 @@ function Login() {
         navigate("/register")
     }
 
-    return (
+    return (!visible) ? (<div></div>) : (
         <div>
             <Spin spinning={loading} size="large" tip="Loading..." delay={500}>
                 <div className="wrap-container">
