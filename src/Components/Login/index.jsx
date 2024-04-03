@@ -1,21 +1,31 @@
 import { Card, Button, Checkbox, Form, Input, message, Spin, Space } from "antd";
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import axiosWithInterceptor from "../../axios/axios";
 import "./index.scss"
+import AuthKeys from "../constants/AuthKeys.js";
 
 function Login() {
+    const location = useLocation();
+
     const [messageApi, contextHolder] = message.useMessage();
     const [loading, setLoading] = useState(false);
 
     // Hooks can only be called inside a function.
     let navigate = useNavigate();
 
+    const queryParams = new URLSearchParams(location.search);
+    const redirectUrl = queryParams.get(AuthKeys.RedirectUrl);
+    console.log("redirectUrl = " + redirectUrl);
+
     const onFinish = async (loginInfo) => {
+        loginInfo.redirectUrl = redirectUrl;
         console.log('Success:', loginInfo);
         setLoading(true);
 
-        axiosWithInterceptor.post("/api/login", loginInfo, {headers: {"Content-Type": "application/json"}})
+        let loginUrl = "/api/spike/login";
+
+        axiosWithInterceptor.post(loginUrl, loginInfo, {headers: {"Content-Type": "application/json"}})
         .then(
             response =>
             {
@@ -25,24 +35,32 @@ function Login() {
                 if (result.success)
                 {
                     // Save JWT token once login success.
-                    let token = result.data;
-                    console.log("token =", token);
-                    window.sessionStorage.setItem("token", token);
+                    let data = result.data;
+                    let token = data.token;
+                    let redirectUrl = data.redirectUrl;
+                    console.log("data =", data);
+                    window.sessionStorage.setItem(AuthKeys.Token, token);
 
-                    // Navigate to home page.
-                    // navigate("/pages/")
+                    if (redirectUrl !== null)
+                    {
+                        console.log("Go redirect.");
+                        window.location.href = redirectUrl + "?token=" + token;
+                    }
                 }
             }
-        )
+        ).catch(error =>
+        {
+            console.log("Error when logging in: ", error);
+        });
     };
-    
+
     const onFinishFailed = (errorInfo) => {
         console.log('Failed:', errorInfo);
     };
 
     const jumpToRegisterPage = () =>
     {
-        console.log("jumpToRegisterPage...")
+        navigate("/register")
     }
 
     return (

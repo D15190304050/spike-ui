@@ -1,0 +1,20 @@
+.wrap-container {
+    height: 100vh;
+    background-image: url("/src/assets/RegistrationBackground.svg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    overflow: hidden;
+    position: relative;
+
+    .image-background {
+        padding-top: 20vh;
+        padding-left: 10vw;
+    }
+
+    // Registration box on the right. Not transparent.
+    .registration-wrap {
+        position: absolute;
+        top: 10vh;
+        left: 35vw;
+    }
+}

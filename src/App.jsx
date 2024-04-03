@@ -3,6 +3,7 @@ import { useState } from 'react'
 import axiosWithInterceptor from './axios/axios'
 import axios from 'axios'
 import { Button } from 'antd';
+import AuthKeys from "./Components/constants/AuthKeys.js";
 const env = import.meta.env;
 
 const remoteCall = () =>
@@ -16,7 +17,7 @@ const remoteCall = () =>
     // )
 
     // Test for token.
-    axiosWithInterceptor.post("/api/quick/login",
+    axiosWithInterceptor.post("/api/spike/login",
         {age: 18, name: "Chris"},
         {headers: {"Content-Type": "application/json"}})
         .then(
@@ -24,7 +25,7 @@ const remoteCall = () =>
         {
             let token = response.data.token;
             console.log("token = ", token);
-            window.sessionStorage.setItem("token", token)
+            window.sessionStorage.setItem(AuthKeys.Token, token)
         }
     )
 }

@@ -1,91 +1,420 @@
-import { Button } from 'antd'
+import {
+    AutoComplete,
+    Button,
+    Cascader,
+    Checkbox,
+    Col,
+    Form,
+    Input,
+    InputNumber,
+    Row,
+    Select,
+    Spin,
+    Card,
+    Space,
+    Upload,
+    message,
+} from 'antd';
+import { PlusOutlined, LoadingOutlined } from '@ant-design/icons';
+import {useEffect, useState} from 'react';
+const env = import.meta.env;
+import "./index.scss"
+import axiosWithInterceptor from "../../axios/axios.jsx";
+import {useNavigate} from "react-router-dom";
 
-function Registration()
-{
+const { Option } = Select;
+
+const formItemLayout = {
+    labelCol: {
+        xs: {
+            span: 24,
+        },
+        sm: {
+            span: 8,
+        },
+    },
+    wrapperCol: {
+        xs: {
+            span: 24,
+        },
+        sm: {
+            span: 16,
+        },
+    },
+};
+
+const tailFormItemLayout = {
+    wrapperCol: {
+        xs: {
+            span: 24,
+            offset: 0,
+        },
+        sm: {
+            span: 16,
+            offset: 8,
+        },
+    },
+};
+
+const getBase64 = (img, callback) => {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => callback(reader.result));
+    reader.readAsDataURL(img);
+};
+
+const beforeUpload = (file) => {
+    // console.log("file =", file);
+
+    const fileType = file.type;
+    const isJpgOrPng = fileType === "image/jpeg" || fileType === "image/png";
+    if (!isJpgOrPng) {
+        message.error('You can only upload JPG/PNG file!');
+    }
+    const isLt2M = file.size / 1024 / 1024 < 2;
+    if (!isLt2M) {
+        message.error('Image must smaller than 2 MB!');
+    }
+    return isJpgOrPng && isLt2M;
+};
+
+function Registration() {
+    const [loadingOfRegistration, setLoadingOfRegistration] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [imageUrl, setImageUrl] = useState();
+    const [captchaId, setCaptchaId] = useState("");
+    const [captchaUrl, setCaptchaUrl] = useState("");
+
+    let navigate = useNavigate();
+
+    const handleChange = (info) => {
+        if (info.file.status === 'uploading') {
+            setLoading(true);
+            return;
+        }
+        if (info.file.status === 'done') {
+            // Get this url from response in real world.
+            getBase64(info.file.originFileObj, (url) => {
+                setLoading(false);
+                setImageUrl(url);
+            });
+        }
+    };
+
+    const uploadButton = (
+        <div>
+            {loading ? <LoadingOutlined /> : <PlusOutlined />}
+            <div
+                style={{
+                    marginTop: 8,
+                }}
+            >
+                Upload
+            </div>
+        </div>
+    );
+
+    const [form] = Form.useForm();
+
+    const onFinish = (values) => {
+        values.avatarUrl = values.avatarUrl.file.response.data;
+        let formData = {...values, captchaId: captchaId};
+
+        axiosWithInterceptor.post("/api/spike/account/register", formData,
+            {headers: {"Content-Type": "application/json"}})
+            .then(response =>
+            {
+                let serviceResponse = response.data;
+
+                if (serviceResponse.data === true)
+                {
+                    message.info("Registration successfully.");
+                    navigate("/");
+                }
+                else
+                {
+                    message.error(serviceResponse.message);
+                }
+            });
+
+        // console.log("fromData =", JSON.stringify(formData)); // This line is used to test in PostMan.
+    };
+
+    const prefixSelector = (
+        <Form.Item name="phoneNumberPrefix" noStyle initialValue="86">
+            <Select
+                style={{
+                    width: 70,
+                }}
+            >
+                <Option value="86">+86</Option>
+                <Option value="87">+87</Option>
+            </Select>
+        </Form.Item>
+    );
+
+    const image_uploading_url = env.VITE_API_URL + "/api/image/avatar/upload";
+    const base64JpgPrefix = "data:image/jpeg;base64,";
+
+    const getCaptcha = () =>
+    {
+        axiosWithInterceptor.get("/api/spike/account/captcha")
+            .then(response =>
+            {
+                let captchaResponse = response.data.data
+                setCaptchaUrl(captchaResponse.captchaBytes);
+                setCaptchaId(captchaResponse.captchaId);
+            })
+    }
+
+    // Get captcha once the component is mounted.
+    useEffect(() => getCaptcha(), []);
+
     return (
         <div>
-            <Spin spinning={loading} size="large" tip="Loading..." delay={500}>
+            <Spin spinning={loadingOfRegistration} size="large" tip="Loading..." delay={500}>
                 <div className="wrap-container">
-                    {contextHolder}
-                    <div className="white-background">
-                        <img src="/src/assets/Eagle.webp" className="image-background" />
-                    </div>
-                    <div className="login-wrap">
+                    <div className="registration-wrap">
                         <Card
-                            title="XXX System"
+                            title="Reshaper"
                             bordered={false}
                             style={{
                                 width: 500, // Card width: 500 px.
                             }}
                         >
                             <Form
-                                name="basic"
-                                labelCol={{
-                                    span: 8,
-                                }}
-                                wrapperCol={{
-                                    span: 16,
-                                }}
-                                style={{
-                                    maxWidth: 600,
-                                }}
-                                initialValues={{
-                                    remember: true,
-                                }}
+                                {...formItemLayout}
+                                form={form}
+                                name="register"
                                 onFinish={onFinish}
-                                onFinishFailed={onFinishFailed}
-                                autoComplete="off"
+                                initialValues={{ residence: ['zhejiang', 'hangzhou', 'xihu'], prefix: '86' }}
+                                style={{ maxWidth: 600 }}
+                                scrollToFirstError
                             >
+
                                 <Form.Item
-                                    label="Username" // "label" is used for display.
-                                    name="username" // "name" is used for http parameters.
+                                    label="Upload"
+                                    name="avatarUrl"
+                                    valuePropName="avatar"
+                                    rules={[
+                                        {
+                                            required: true,
+                                            message: 'Please upload your avatar!',
+                                        },
+                                    ]}
+                                >
+                                    <Upload
+                                        name="avatarFile"
+                                        listType="picture-card"
+                                        className="avatar-uploader"
+                                        showUploadList={false}
+                                        action={image_uploading_url}
+                                        beforeUpload={beforeUpload}
+                                        onChange={handleChange}
+                                        accept="image/jpeg, image/png"
+                                        method={"POST"}
+                                    >
+                                        {imageUrl ? (
+                                            <img
+                                                src={imageUrl}
+                                                alt="avatar"
+                                                style={{
+                                                    width: '100%',
+                                                }}
+                                            />
+                                        ) : (
+                                            uploadButton
+                                        )}
+                                    </Upload>
+                                </Form.Item>
+
+                                <Form.Item
+                                    name="username"
+                                    label="Username"
                                     rules={[
                                         {
                                             required: true,
                                             message: 'Please input your username!',
                                         },
+                                        () => ({
+                                            validator(_, value) {
+                                                let usernamePattern = /^[A-Za-z][A-Za-z0-9\-_#@!$%]{4,32}$/;
+                                                if (!value || usernamePattern.test(value)) {
+                                                    return Promise.resolve();
+                                                }
+                                                return Promise.reject(new Error("The username can only starts with an English alphabet and can only contains English alphabets, numbers, '_'. And a username should contains 5 - 32 characters."));
+                                            },
+                                        }),
                                     ]}
                                 >
-                                    <Input />
+                                    <Input allowClear />
                                 </Form.Item>
 
                                 <Form.Item
-                                    label="Password"
+                                    name="email"
+                                    label="E-mail"
+                                    rules={[
+                                        {
+                                            type: 'email',
+                                            message: 'The input is not valid E-mail!',
+                                        },
+                                        {
+                                            required: true,
+                                            message: 'Please input your E-mail!',
+                                        },
+                                    ]}
+                                >
+                                    <Input allowClear />
+                                </Form.Item>
+
+                                <Form.Item
                                     name="password"
+                                    label="Password"
                                     rules={[
                                         {
                                             required: true,
                                             message: 'Please input your password!',
                                         },
+                                        () => ({
+                                            validator(_, value) {
+                                                let passwordPattern = /[A-Za-z0-9\-_#@!$%]{8,32}/;
+
+                                                if (!value || passwordPattern.test(value)) {
+                                                    return Promise.resolve();
+                                                }
+                                                return Promise.reject(new Error("The password can only contains English alphabets, numbers and allowed punctuations (-_#@!$%). And a password should contains 8 - 32 characters."));
+                                            }
+                                        })
+                                    ]}
+                                    hasFeedback
+                                >
+                                    <Input.Password allowClear />
+                                </Form.Item>
+
+                                <Form.Item
+                                    name="confirmedPassword"
+                                    label="Confirm Password"
+                                    dependencies={['password']}
+                                    hasFeedback
+                                    rules={[
+                                        {
+                                            required: true,
+                                            message: 'Please confirm your password!',
+                                        },
+                                        ({ getFieldValue }) => ({
+                                            validator(_, value) {
+                                                if (!value || getFieldValue('password') === value) {
+                                                    return Promise.resolve();
+                                                }
+                                                return Promise.reject(new Error('The two passwords that you entered do not match!'));
+                                            },
+                                        }),
                                     ]}
                                 >
-                                    <Input.Password />
+                                    <Input.Password allowClear />
                                 </Form.Item>
 
                                 <Form.Item
-                                    name="rememberMe"
+                                    name="nickname"
+                                    label="Nickname"
+                                    tooltip="What do you want others to call you?"
+                                    rules={[
+                                        {
+                                            required: true,
+                                            message: 'Please input your nickname!',
+                                            whitespace: true
+                                        },
+                                        () => ({
+                                            validator(_, value) {
+                                                let usernamePattern = /^[A-Za-z][A-Za-z0-9\-_#@!$%]{4,32}$/;
+                                                if (!value || usernamePattern.test(value)) {
+                                                    return Promise.resolve();
+                                                }
+                                                return Promise.reject(new Error("The nickname can only starts with an English alphabet and can only contains English alphabets, numbers, '_'. And a username should contains 5 - 32 characters."));
+                                            },
+                                        }),
+                                    ]}
+                                >
+                                    <Input allowClear />
+                                </Form.Item>
+
+                                <Form.Item
+                                    name="phoneNumber"
+                                    label="Phone Number"
+                                    rules={[
+                                        {
+                                            required: true,
+                                            message: 'Please input your phone number!'
+                                        },
+                                        () => ({
+                                            validator(_, value) {
+                                                let phoneNumberPattern = /^(13[0-9]|14[01456879]|15[0-35-9]|16[2567]|17[0-8]|18[0-9]|19[0-35-9])\d{8}$/;
+
+                                                if (!value || phoneNumberPattern.test(value)) {
+                                                    return Promise.resolve();
+                                                }
+                                                return Promise.reject(new Error("Please enter a correct phone number."));
+                                            },
+                                        }),
+                                    ]}
+                                >
+                                    <Input addonBefore={prefixSelector} style={{ width: '100%' }} allowClear />
+                                </Form.Item>
+
+                                <Form.Item
+                                    name="gender"
+                                    label="Gender"
+                                    rules={[{ required: true, message: 'Please select gender!' }]}
+                                    initialValue="secret"
+                                >
+                                    <Select placeholder="select your gender">
+                                        <Option value="male">Male</Option>
+                                        <Option value="female">Female</Option>
+                                        <Option value="secret">Secret</Option>
+                                    </Select>
+                                </Form.Item>
+
+                                <Form.Item label="Captcha" extra="We must make sure that your are a human.">
+                                    <Row gutter={8}>
+                                        <Col span={12}>
+                                            <Form.Item
+                                                name="captcha"
+                                                noStyle
+                                                rules={[{ required: true, message: 'Please input the captcha you got!' }]}
+                                            >
+                                                <Input allowClear />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Button onClick={getCaptcha}>Get captcha</Button>
+                                        </Col>
+                                        <Col span={12}>
+                                            <img src={captchaUrl} alt={"Captcha"}/>
+                                        </Col>
+                                    </Row>
+                                </Form.Item>
+
+                                <Form.Item
+                                    name="acceptAgreement"
                                     valuePropName="checked"
-                                    wrapperCol={{
-                                        offset: 8,
-                                        span: 16,
-                                    }}
+                                    rules={[
+                                        {
+                                            validator: (_, value) =>
+                                                value ? Promise.resolve() : Promise.reject(new Error('Should accept agreement')),
+                                        },
+                                    ]}
+                                    {...tailFormItemLayout}
                                 >
-                                    <Checkbox defaultChecked>Remember me</Checkbox>
+                                    <Checkbox>
+                                        I have read the <a href="">agreement</a>
+                                    </Checkbox>
                                 </Form.Item>
-
-                                <Form.Item
-                                    wrapperCol={{
-                                        offset: 8,
-                                        span: 16,
-                                    }}
-                                >
+                                <Form.Item {...tailFormItemLayout}>
                                     <Space>
                                         <Button type="primary" htmlType="submit">
-                                            Login
-                                        </Button>
-                                        <Button type="default" htmlType="button" onClick={jumpToRegisterPage}>
                                             Register
                                         </Button>
+                                        
+                                        <Button htmlType='reset'>Reset</Button>
                                     </Space>
                                 </Form.Item>
                             </Form>

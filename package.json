@@ -6,12 +6,12 @@
   "scripts": {
     "dev": "vite",
     "start": "vite --mode dev",
-    "build": "vite build",
+    "build": "vite build --mode dev",
     "preview": "vite preview"
   },
   "dependencies": {
     "@ant-design/icons": "^5.0.1",
-    "antd": "^5.4.0",
+    "antd": "^5.4.6",
     "axios": "^1.3.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
